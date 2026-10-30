@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2026年月度與年度工作復盤報告 | Work Review Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="data-2026.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0a0e1a;
+      --bg-secondary: #0f1628;
+      --bg-card: #131d35;
+      --bg-card-hover: #1a2644;
+      --accent-blue: #4f8ef7;
+      --accent-purple: #a78bfa;
+      --accent-cyan: #22d3ee;
+      --accent-green: #34d399;
+      --accent-yellow: #fbbf24;
+      --accent-red: #f87171;
+      --accent-pink: #f472b6;
+      --accent-orange: #fb923c;
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --text-muted: #475569;
+      --border: rgba(255,255,255,0.06);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', 'Noto Sans TC', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background:
+        radial-gradient(ellipse at 20% 20%, rgba(79,142,247,0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(167,139,250,0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(34,211,238,0.04) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 24px 60px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header */
+    header {
+      padding: 40px 0 24px;
+      text-align: center;
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(79,142,247,0.12);
+      border: 1px solid rgba(79,142,247,0.3);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent-blue);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    header h1 {
+      font-size: clamp(28px, 4.5vw, 56px);
+      font-weight: 900;
+      background: linear-gradient(135deg, #fff 0%, var(--accent-blue) 50%, var(--accent-purple) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+      margin-bottom: 12px;
+    }
+
+    header p {
+      color: var(--text-secondary);
+      font-size: 15px;
+      max-width: 680px;
+      margin: 0 auto 24px;
+    }
+
+    /* Month Navigation Tabs */
+    .tab-nav-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 32px;
+    }
+
+    .tab-nav {
+      display: inline-flex;
+      background: rgba(15, 22, 40, 0.85);
+      border: 1px solid var(--border);
+      padding: 6px;
+      border-radius: 100px;
+      gap: 6px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      overflow-x: auto;
+      max-width: 100%;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      padding: 10px 22px;
+      border-radius: 100px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tab-btn:hover {
+      color: #fff;
+      background: rgba(255,255,255,0.05);
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(79,142,247,0.4);
+    }
+
+    .tab-btn.summary-tab.active {
+      background: linear-gradient(135deg, var(--accent-yellow), var(--accent-orange));
+      color: #000;
+      box-shadow: 0 4px 16px rgba(251,191,36,0.4);
+    }
+
+    /* Stat Cards Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px 20px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      border-radius: 16px 16px 0 0;
+    }
+
+    .stat-card.blue::before   { background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan)); }
+    .stat-card.purple::before { background: linear-gradient(90deg, var(--accent-purple), var(--accent-pink)); }
+    .stat-card.green::before  { background: linear-gradient(90deg, var(--accent-green), var(--accent-cyan)); }
+    .stat-card.yellow::before { background: linear-gradient(90deg, var(--accent-yellow), var(--accent-orange)); }
+    .stat-card.teal::before   { background: linear-gradient(90deg, var(--accent-cyan), var(--accent-green)); }
+
+    .stat-icon { font-size: 28px; margin-bottom: 12px; }
+    .stat-value { font-size: 34px; font-weight: 800; line-height: 1; margin-bottom: 6px; }
+    .stat-card.blue .stat-value   { color: var(--accent-blue); }
+    .stat-card.purple .stat-value { color: var(--accent-purple); }
+    .stat-card.green .stat-value  { color: var(--accent-green); }
+    .stat-card.yellow .stat-value { color: var(--accent-yellow); }
+    .stat-card.teal .stat-value   { color: var(--accent-cyan); }
+    .stat-label { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+
+    /* Section Divider & Titles */
+    .section-divider { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+    .section-title {
+      font-size: 20px; font-weight: 700; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-title .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .chart-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .chart-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .chart-wrap { position: relative; height: 260px; }
+    .chart-wrap-tall { position: relative; height: 280px; }
+
+    /* Heatmap Calendar */
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+    }
+
+    .heatmap-cell {
+      aspect-ratio: 1.2;
+      border-radius: 8px;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s;
+    }
+
+    .heatmap-cell .hm-date { font-size: 11px; font-weight: 700; }
+    .heatmap-cell .hm-count { font-size: 10px; font-weight: 600; text-align: right; }
+
+    .hm-empty { background: transparent; }
+    .hm-nowork { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.03); color: var(--text-muted); }
+    .hm-low { background: rgba(79,142,247,0.15); border: 1px solid rgba(79,142,247,0.3); color: var(--accent-blue); }
+    .hm-mid { background: rgba(79,142,247,0.35); border: 1px solid rgba(79,142,247,0.6); color: #fff; }
+    .hm-high { background: rgba(167,139,250,0.5); border: 1px solid rgba(167,139,250,0.8); color: #fff; }
+    .hm-veryhigh { background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); color: #fff; font-weight: bold; }
+    .hm-vacation { background: rgba(52,211,153,0.12); border: 1px dashed rgba(52,211,153,0.4); color: var(--accent-green); }
+    .hm-typhoon { background: rgba(96,165,250,0.15); border: 1px dashed rgba(96,165,250,0.4); color: var(--accent-cyan); }
+
+    /* Overtime Card Display */
+    .overtime-display { text-align: center; margin-bottom: 12px; }
+    .overtime-number { font-size: 48px; font-weight: 900; color: var(--accent-green); line-height: 1; }
+    .overtime-unit { font-size: 16px; color: var(--text-secondary); margin-top: 4px; }
+    .overtime-days { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
+
+    /* Original Analysis Cards & Grid */
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .analysis-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .analysis-card h3 {
+      font-size: 18px; font-weight: 700; margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .issue-item {
+      display: flex; gap: 14px; padding: 14px; border-radius: 12px;
+      margin-bottom: 12px; background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+    }
+    .issue-item:last-child { margin-bottom: 0; }
+
+    .issue-item.strength { border-left: 3px solid var(--accent-green); background: rgba(52,211,153,0.04); }
+    .issue-item.problem  { border-left: 3px solid var(--accent-red); background: rgba(248,113,113,0.04); }
+    .issue-item.improve  { border-left: 3px solid var(--accent-blue); background: rgba(79,142,247,0.04); }
+
+    .issue-icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+    .issue-content { flex: 1; }
+    .issue-title { font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+    .issue-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+
+    /* Timeline */
+    .timeline { position: relative; padding-left: 20px; }
+    .timeline::before {
+      content: ''; position: absolute; left: 7px; top: 10px; bottom: 10px;
+      width: 2px; background: var(--border);
+    }
+
+    .timeline-item {
+      position: relative; padding-bottom: 18px; display: flex; gap: 16px; align-items: flex-start;
+    }
+
+    .timeline-date {
+      min-width: 50px; font-size: 13px; font-weight: 700; color: var(--text-secondary); text-align: right;
+    }
+
+    .timeline-dot {
+      width: 14px; height: 14px; border-radius: 50%; background: var(--accent-blue);
+      border: 3px solid var(--bg-card); z-index: 1; margin-top: 2px; flex-shrink: 0;
+    }
+    .timeline-dot.typhoon { background: var(--accent-cyan); }
+
+    .timeline-content { flex: 1; }
+    .timeline-tasks { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .task-tag {
+      font-size: 12px; padding: 4px 10px; border-radius: 6px; background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border); color: var(--text-primary);
+    }
+
+    /* Category Tag Colors */
+    .cat-role { border-color: rgba(79,142,247,0.3); background: rgba(79,142,247,0.08); color: #93c5fd; }
+    .cat-ai   { border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); color: #c4b5fd; }
+    .cat-tool { border-color: rgba(34,211,238,0.3); background: rgba(34,211,238,0.08); color: #67e8f9; }
+    .cat-coop { border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.08); color: #6ee7b7; }
+    .cat-doc  { border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.08); color: #fde047; }
+    .cat-outsource { border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.08); color: #fca5a5; }
+
+    .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <header>
+    <div class="header-badge">📊 Work Review 2026</div>
+    <h1 id="pageTitle">2026年月度與年度工作復盤報告</h1>
+    <p id="pageSubtitle">自動化跨月度數據追蹤、AI 落地成果與全年度趨勢面板</p>
+    
+    <!-- Tab Nav -->
+    <div class="tab-nav-wrapper">
+      <div class="tab-nav" id="tabNav"></div>
+    </div>
+  </header>
+
+  <!-- View Content Wrapper -->
+  <div id="viewContainer"></div>
+</div>
+
+<script>
+let currentMonthKey = window.REVIEW_DATA_2026 ? window.REVIEW_DATA_2026.activeMonth : "09";
+let chartInstances = {};
+
+function init() {
+  currentMonthKey = window.REVIEW_DATA_2026.activeMonth || "09";
+  renderTabNav();
+  switchTab(currentMonthKey);
+}
+
+function renderTabNav() {
+  const tabNav = document.getElementById('tabNav');
+  const months = window.REVIEW_DATA_2026.months;
+  let html = '';
+
+  Object.keys(months).sort().forEach(mKey => {
+    const m = months[mKey];
+    html += `<button class="tab-btn ${mKey === currentMonthKey ? 'active' : ''}" onclick="switchTab('${mKey}')">
+      📅 ${m.monthName}
+    </button>`;
+  });
+
+  html += `<button class="tab-btn summary-tab ${currentMonthKey === 'annual' ? 'active' : ''}" onclick="switchTab('annual')">
+    🏆 2026 全年度總結
+  </button>`;
+
+  tabNav.innerHTML = html;
+}
+
+function switchTab(tabKey) {
+  currentMonthKey = tabKey;
+  renderTabNav();
+  destroyCharts();
+
+  if (tabKey === 'annual') {
+    renderAnnualView();
+  } else {
+    renderMonthView(tabKey);
+  }
+}
+
+function destroyCharts() {
+  Object.keys(chartInstances).forEach(k => {
+    if (chartInstances[k]) chartInstances[k].destroy();
+  });
+  chartInstances = {};
+}
+
+// ─── RENDER MONTH VIEW (原汁原味經典版面) ──────────────────────────────
+function renderMonthView(mKey) {
+  const m = window.REVIEW_DATA_2026.months[mKey];
+  const container = document.getElementById('viewContainer');
+
+  document.getElementById('pageTitle').textContent = m.title;
+  document.getElementById('pageSubtitle').textContent = `涵蓋 ${m.dateRange}，共 ${m.workdays} 個有記錄工作日${m.typhoonDays ? '（含颱風假 ' + m.typhoonDays + ' 天）' : ''}｜任務 ${m.tasksCount} 項｜加班 ${m.overtime} 小時 ✅ 達標`;
+
+  let html = `
+    <!-- Stat Cards -->
+    <div class="stats-grid">
+      <div class="stat-card blue">
+        <div class="stat-icon">📅</div>
+        <div class="stat-value">${m.workdays}</div>
+        <div class="stat-label">有記錄工作日</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon">⏰</div>
+        <div class="stat-value">${m.overtime}</div>
+        <div class="stat-label">加班小時（最低 20H ✅）</div>
+      </div>
+      <div class="stat-card purple">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value">${m.tasksCount}</div>
+        <div class="stat-label">總任務數</div>
+      </div>
+      <div class="stat-card yellow">
+        <div class="stat-icon">🤖</div>
+        <div class="stat-value">${m.aiTasksCount}+</div>
+        <div class="stat-label">AI 相關任務</div>
+      </div>
+      <div class="stat-card teal">
+        <div class="stat-icon">🎨</div>
+        <div class="stat-value">${m.roleTasksCount || 6}</div>
+        <div class="stat-label">角色專案推進</div>
+        ${m.roleProjectsList ? `<div style="font-size: 11px; color: #94a3b8; margin-top: 6px; line-height: 1.4;">${m.roleProjectsList}</div>` : ''}
+      </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- Charts Row 1 -->
+    <div class="chart-grid-2">
+      <div class="card">
+        <h3>🏷️ 工作類型分佈</h3>
+        <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
+        <div class="legend" id="categoryLegend"></div>
+      </div>
+      <div class="card">
+        <h3>📆 每日任務數量</h3>
+        <div class="chart-wrap"><canvas id="dailyChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Heatmap -->
+    <div class="card" style="margin-bottom:20px">
+      <h3>🗓️ ${m.monthName}工作強度熱力圖</h3>
+      <div class="heatmap-grid" id="heatmapGrid"></div>
+      <div class="legend" style="margin-top:16px;">
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,0.02);border:1px dashed rgba(255,255,255,0.05)"></div> 無記錄</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(52,211,153,0.08);border:1px dashed rgba(52,211,153,0.3)"></div> 🏖️ 公司假期</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(96,165,250,0.1);border:1px dashed rgba(96,165,250,0.35)"></div> 🌀 颱風假</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(79,142,247,0.2)"></div> 低（1-4 項）</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(79,142,247,0.4)"></div> 中（5-7 項）</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(79,142,247,0.65)"></div> 高（8-10 項）</div>
+        <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#4f8ef7,#a78bfa)"></div> 極高（10+ 項）</div>
+      </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="chart-grid-2">
+      <div class="card">
+        <h3>🕸️ 技能維度分析</h3>
+        <div class="chart-wrap-tall"><canvas id="radarChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>🤖 AI 工具投入趨勢（週）</h3>
+        <div class="chart-wrap-tall"><canvas id="aiTrendChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Category horizontal bar -->
+    <div class="card" style="margin-bottom:20px">
+      <h3>📊 各類工作比重（任務數量）</h3>
+      <div class="chart-wrap" style="height:200px"><canvas id="categoryBarChart"></canvas></div>
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- Timeline Section -->
+    <div class="card" style="margin-bottom:20px">
+      <h3>🗒️ 逐日工作記錄</h3>
+      <div class="timeline" id="timelineList"></div>
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- 原汁原味「問題診斷與改善建議」卡片區塊 -->
+    <div class="section-title">
+      <span class="dot" style="background:var(--accent-red)"></span>
+      問題診斷與改善建議
+    </div>
+
+    <div class="analysis-grid">
+      <!-- 優勢亮點 -->
+      <div class="analysis-card">
+        <h3>💪 優勢亮點</h3>
+        ${(m.strengths || []).map(s => `
+          <div class="issue-item strength">
+            <div class="issue-icon">${s.icon}</div>
+            <div class="issue-content">
+              <div class="issue-title">${s.title}</div>
+              <div class="issue-desc">${s.desc}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      <!-- 問題與風險 -->
+      <div class="analysis-card">
+        <h3>⚠️ 問題與風險</h3>
+        ${(m.problems || []).map(p => `
+          <div class="issue-item problem">
+            <div class="issue-icon">${p.icon}</div>
+            <div class="issue-content">
+              <div class="issue-title">${p.title}</div>
+              <div class="issue-desc">${p.desc}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- 改善建議 Roadmap -->
+    <div class="analysis-card" style="margin-bottom:20px">
+      <h3>🚀 改善建議 Roadmap</h3>
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 8px;">
+        ${(m.improvements || []).map(imp => `
+          <div class="issue-item improve">
+            <div class="issue-icon">${imp.icon}</div>
+            <div class="issue-content">
+              <div class="issue-title">${imp.title}</div>
+              <div class="issue-desc">${imp.desc}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+  setTimeout(() => initMonthCharts(m), 50);
+}
+
+function initMonthCharts(m) {
+  const cats = window.REVIEW_DATA_2026.categories;
+  
+  // 1. Category Chart
+  const catKeys = Object.keys(m.catCount);
+  const catData = catKeys.map(k => m.catCount[k]);
+  const catColors = catKeys.map(k => cats[k] ? cats[k].color : '#94a3b8');
+  const catLabels = catKeys.map(k => cats[k] ? cats[k].label : k);
+
+  const ctx1 = document.getElementById('categoryChart').getContext('2d');
+  chartInstances.cat = new Chart(ctx1, {
+    type: 'doughnut',
+    data: {
+      labels: catLabels,
+      datasets: [{ data: catData, backgroundColor: catColors, borderWidth: 2, borderColor: '#131d35' }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 12 } } } }
+    }
+  });
+
+  // 2. Daily Chart
+  const dailyLabels = m.dailyData.map(d => d.date);
+  const dailyCounts = m.dailyData.map(d => d.tasks.length);
+  const ctx2 = document.getElementById('dailyChart').getContext('2d');
+  chartInstances.daily = new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: dailyLabels,
+      datasets: [{ label: '任務數', data: dailyCounts, backgroundColor: '#4f8ef7aa', borderColor: '#4f8ef7', borderRadius: 4 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8' }, beginAtZero: true }
+      }
+    }
+  });
+
+  // 3. Heatmap Render (Dynamic month offset calculation)
+  const hmGrid = document.getElementById('heatmapGrid');
+  ['日','一','二','三','四','五','六'].forEach(h => {
+    const el = document.createElement('div');
+    el.className = 'heatmap-cell hm-empty';
+    el.innerHTML = `<div class="hm-date" style="color:#475569">${h}</div>`;
+    hmGrid.appendChild(el);
+  });
+
+  const monthIdx = parseInt(m.monthId) - 1;
+  const firstDay = new Date(2026, monthIdx, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(2026, monthIdx + 1, 0).getDate();
+
+  for (let i = 0; i < firstDay; i++) {
+    const el = document.createElement('div');
+    el.className = 'heatmap-cell hm-nowork';
+    el.innerHTML = '<div class="hm-date" style="color:#2d3748">-</div>';
+    hmGrid.appendChild(el);
+  }
+
+  const typhoonSet = new Set(m.typhoonDaysList || []);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dailyInfo = m.dailyData.find(item => item.date === `${parseInt(m.monthId)}/${d}`);
+    const count = dailyInfo ? dailyInfo.tasks.length : 0;
+    const isTyphoon = typhoonSet.has(d);
+
+    let cls = 'hm-nowork', label = '';
+    if (isTyphoon) {
+      cls = 'hm-typhoon'; label = '<div class="hm-count">颱風</div>';
+    } else if (count > 0) {
+      if (count >= 10)     cls = 'hm-veryhigh';
+      else if (count >= 7) cls = 'hm-high';
+      else if (count >= 4) cls = 'hm-mid';
+      else                 cls = 'hm-low';
+      label = `<div class="hm-count">${count}項</div>`;
+    }
+
+    const cell = document.createElement('div');
+    cell.className = `heatmap-cell ${cls}`;
+    cell.innerHTML = `<div class="hm-date">${d}</div>${label}`;
+    hmGrid.appendChild(cell);
+  }
+
+  // 4. Radar Chart
+  const ctx3 = document.getElementById('radarChart').getContext('2d');
+  chartInstances.radar = new Chart(ctx3, {
+    type: 'radar',
+    data: {
+      labels: ['角色製作', 'AI 研究', '工具開發', '溝通協作', '文件報告', '外包管理'],
+      datasets: [{ label: m.monthName, data: m.radarData, backgroundColor: 'rgba(79,142,247,0.15)', borderColor: '#4f8ef7', pointBackgroundColor: '#4f8ef7' }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { r: { min: 0, max: 100, ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.08)' } } }
+    }
+  });
+
+  // 5. AI Trend Chart
+  const ctx4 = document.getElementById('aiTrendChart').getContext('2d');
+  chartInstances.aiTrend = new Chart(ctx4, {
+    type: 'line',
+    data: {
+      labels: ['W1', 'W2', 'W3', 'W4'],
+      datasets: [{ label: 'AI 任務數', data: m.weeklyAiTrend, borderColor: '#a78bfa', backgroundColor: 'rgba(167,139,250,0.1)', fill: true, tension: 0.4 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
+
+
+
+  // 7. Category Horizontal Bar Chart
+  const ctx6 = document.getElementById('categoryBarChart').getContext('2d');
+  const catBarKeys = Object.keys(cats).filter(k => m.catCount[k]);
+  chartInstances.catBar = new Chart(ctx6, {
+    type: 'bar',
+    data: {
+      labels: catBarKeys.map(k => cats[k].label),
+      datasets: [{
+        data: catBarKeys.map(k => m.catCount[k] || 0),
+        backgroundColor: catBarKeys.map(k => cats[k].color + 'aa'),
+        borderColor: catBarKeys.map(k => cats[k].color),
+        borderWidth: 1, borderRadius: 6
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8' } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#e2e8f0', font: { size: 12 } } }
+      }
+    }
+  });
+
+  // 8. Timeline List
+  const timelineEl = document.getElementById('timelineList');
+  m.dailyData.forEach(d => {
+    const div = document.createElement('div');
+    div.className = 'timeline-item';
+    const tagsHTML = d.tasks.map((t, i) => {
+      const cat = d.cats[i] || 'other';
+      return `<span class="task-tag cat-${cat}">${t}</span>`;
+    }).join('');
+
+    const dotCls = d.isHoliday ? 'timeline-dot typhoon' : 'timeline-dot';
+    div.innerHTML = `
+      <div class="timeline-date">
+        <div style="font-size:14px;">${d.date.split('/')[1]}</div>
+        <div style="font-size:11px;color:#64748b">${d.day}</div>
+      </div>
+      <div class="${dotCls}"></div>
+      <div class="timeline-content">
+        <div class="timeline-tasks">${tagsHTML}</div>
+      </div>
+    `;
+    timelineEl.appendChild(div);
+  });
+}
+
+// ─── RENDER ANNUAL VIEW ──────────────────────────────────────────────
+function renderAnnualView() {
+  const container = document.getElementById('viewContainer');
+  const totals = window.REVIEW_DATA_2026.getAnnualTotals();
+  const summary = window.REVIEW_DATA_2026.annualSummary;
+  const cats = window.REVIEW_DATA_2026.categories;
+
+  document.getElementById('pageTitle').textContent = summary.title;
+  document.getElementById('pageSubtitle').textContent = summary.subtitle;
+
+  // 動態生成全年度各領域不重複項目盤點卡片
+  let catInventoryCardsHTML = '';
+  const totalCatSum = Object.values(totals.annualCatCount).reduce((a, b) => a + b, 0);
+
+  Object.keys(cats).forEach(catKey => {
+    if (catKey === 'other') return;
+    const count = totals.annualCatCount[catKey] || 0;
+    const percent = totalCatSum > 0 ? ((count / totalCatSum) * 100).toFixed(1) : 0;
+    const cat = cats[catKey];
+    const items = totals.annualCatItems[catKey] || [];
+    const isHighest = catKey === 'role';
+
+    catInventoryCardsHTML += `
+      <div class="card" style="margin-bottom:0; border-left: 4px solid ${cat.color};">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+          <h4 style="font-size:16px; font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
+            ${cat.icon} ${cat.label}
+          </h4>
+          <div style="display:flex; gap:6px;">
+            <span style="font-size:12px; padding:3px 10px; border-radius:100px; background:${cat.color}22; color:${cat.color}; border:1px solid ${cat.color}55; font-weight:700;">
+              ${count} 項 (${percent}%)
+            </span>
+            ${isHighest ? `<span style="font-size:11px; padding:3px 8px; border-radius:100px; background:rgba(251,191,36,0.15); color:var(--accent-yellow); border:1px solid rgba(251,191,36,0.4); font-weight:700;">🔥 最高比例領域</span>` : ''}
+          </div>
+        </div>
+        <div style="font-size:12px; color:var(--text-secondary); line-height:1.6;">
+          <strong style="color:var(--text-primary); display:block; margin-bottom:6px;">全年度不重複項目與專案盤點 (${items.length} 項)：</strong>
+          <div style="display:flex; flex-wrap:wrap; gap:6px;">
+            ${items.map(item => `<span class="task-tag cat-${catKey}">${item}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  let html = `
+    <!-- Annual Stat Cards -->
+    <div class="stats-grid">
+      <div class="stat-card blue">
+        <div class="stat-icon">📅</div>
+        <div class="stat-value">${totals.totalWorkdays}</div>
+        <div class="stat-label">全年度累計工作日</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon">⏰</div>
+        <div class="stat-value">${totals.totalOvertime}</div>
+        <div class="stat-label">全年度累計加班 (小時)</div>
+      </div>
+      <div class="stat-card purple">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value">${totals.totalTasks}</div>
+        <div class="stat-label">全年度完成任務總數</div>
+      </div>
+      <div class="stat-card yellow">
+        <div class="stat-icon">🤖</div>
+        <div class="stat-value">${totals.totalAiTasks}+</div>
+        <div class="stat-label">全年度 AI 落地成果數</div>
+      </div>
+    </div>
+
+    <!-- Annual Work Category Doughnut Chart & Summary Section -->
+    <div class="section-title">
+      <span class="dot" style="background:var(--accent-purple)"></span>
+      2026 全年度工作類型與各領域不重複項目盤點
+    </div>
+
+    <div class="chart-grid-2" style="margin-bottom:24px;">
+      <div class="card">
+        <h3>🏷️ 全年度工作類型比例 (最高比例：🎨 角色製作 ${(totalCatSum > 0 ? (totals.annualCatCount.role / totalCatSum * 100).toFixed(1) : 0)}%)</h3>
+        <div class="chart-wrap" style="height:260px;"><canvas id="annualCategoryChart"></canvas></div>
+      </div>
+      <div class="card" style="display:flex; flex-direction:column; justify-content:center; padding:24px;">
+        <h3 style="margin-bottom:14px; font-size:18px;">📊 領域投入重點分析</h3>
+        <div style="font-size:13.5px; color:var(--text-secondary); line-height:1.75;">
+          <p style="margin-bottom:10px;">🎨 <strong style="color:var(--text-primary)">角色製作 / 骨架拆圖 (${(totalCatSum > 0 ? (totals.annualCatCount.role / totalCatSum * 100).toFixed(1) : 0)}%)</strong> 為全年度投入比例最高的核心領域，累計完成 <strong>${totals.annualCatCount.role} 項</strong> 任務交付與 <strong>${(totals.annualCatItems.role || []).length} 個獨立專案/角色</strong>（涵蓋賽特、招財童子、關羽、孫悟空、烈焰神龍等）。</p>
+          <p style="margin-bottom:10px;">🤖 <strong style="color:var(--text-primary)">AI 工具研究與落地 (${(totalCatSum > 0 ? (totals.annualCatCount.ai / totalCatSum * 100).toFixed(1) : 0)}%)</strong> 累計 <strong>${totals.annualCatCount.ai} 項</strong>，涵蓋企業知識庫重構、Agent Skill、MCP 擾動 Shader 與 2D 拼板。</p>
+          <p style="margin-bottom:10px;">💬 <strong style="color:var(--text-primary)">跨單位溝通 (${(totalCatSum > 0 ? (totals.annualCatCount.coop / totalCatSum * 100).toFixed(1) : 0)}%)</strong> 與 📑 <strong style="color:var(--text-primary)">報告歸檔 (${(totalCatSum > 0 ? (totals.annualCatCount.doc / totalCatSum * 100).toFixed(1) : 0)}%)</strong> 保持緊密支援。</p>
+          <p>📦 <strong style="color:var(--text-primary)">外包管理與點收 (${(totalCatSum > 0 ? (totals.annualCatCount.outsource / totalCatSum * 100).toFixed(1) : 0)}%)</strong> 累計 <strong>${totals.annualCatCount.outsource} 項</strong>，落實合約簽核與外包 E 化驗收標準。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Annual Categories Inventory Cards Grid -->
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap:20px; margin-bottom:32px;">
+      ${catInventoryCardsHTML}
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- Annual Charts -->
+    <div class="chart-grid-2">
+      <div class="card">
+        <h3>📈 2026 月度任務數與加班趨勢對比</h3>
+        <div class="chart-wrap"><canvas id="annualTrendChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>🤖 2026 全年度 AI 落地任務成長</h3>
+        <div class="chart-wrap"><canvas id="annualAiTrendChart"></canvas></div>
+      </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- 全年度問題診斷與改善建議 -->
+    <div class="section-title">
+      <span class="dot" style="background:var(--accent-yellow)"></span>
+      2026 全年度總結與願景 Roadmap
+    </div>
+
+    <div class="analysis-grid">
+      <!-- 核心優勢總結 -->
+      <div class="analysis-card">
+        <h3>💪 全年度核心優勢總結</h3>
+        ${(summary.strengths || []).map(s => `
+          <div class="issue-item strength">
+            <div class="issue-icon">${s.icon}</div>
+            <div class="issue-content">
+              <div class="issue-title">${s.title}</div>
+              <div class="issue-desc">${s.desc}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      <!-- 改善空間總結 -->
+      <div class="analysis-card">
+        <h3>⚠️ 全年度改善空間總結</h3>
+        ${(summary.problems || []).map(p => `
+          <div class="issue-item problem">
+            <div class="issue-icon">${p.icon}</div>
+            <div class="issue-content">
+              <div class="issue-title">${p.title}</div>
+              <div class="issue-desc">${p.desc}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- 願景目標 Roadmap -->
+    <div class="analysis-card" style="margin-bottom:20px">
+      <h3>🚀 全年度願景與行動 Roadmap</h3>
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 8px;">
+        ${(summary.improvements || []).map(imp => `
+          <div class="issue-item improve">
+            <div class="issue-icon">${imp.icon}</div>
+            <div class="issue-content">
+              <div class="issue-title">${imp.title}</div>
+              <div class="issue-desc">${imp.desc}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+  setTimeout(() => initAnnualCharts(totals), 50);
+}
+
+function initAnnualCharts(totals) {
+  const cats = window.REVIEW_DATA_2026.categories;
+  const catKeys = Object.keys(cats).filter(k => totals.annualCatCount[k]);
+  const catData = catKeys.map(k => totals.annualCatCount[k]);
+  const catColors = catKeys.map(k => cats[k].color);
+  const catLabels = catKeys.map(k => cats[k].label);
+
+  // 1. Annual Category Doughnut Chart
+  const ctxCat = document.getElementById('annualCategoryChart').getContext('2d');
+  chartInstances.annualCat = new Chart(ctxCat, {
+    type: 'doughnut',
+    data: {
+      labels: catLabels,
+      datasets: [{ data: catData, backgroundColor: catColors, borderWidth: 2, borderColor: '#131d35' }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 12 } } } }
+    }
+  });
+
+  // 2. Annual Task & Overtime Trend Chart
+  const ctx1 = document.getElementById('annualTrendChart').getContext('2d');
+  chartInstances.annualTrend = new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: totals.monthlyLabels,
+      datasets: [
+        { label: '任務總數', data: totals.tasksTrend, backgroundColor: '#4f8ef7aa', borderColor: '#4f8ef7', borderRadius: 6 },
+        { label: '加班小時', data: totals.overtimeTrend, backgroundColor: '#34d399aa', borderColor: '#34d399', borderRadius: 6 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true }
+      }
+    }
+  });
+
+  // 3. Annual AI Trend Chart
+  const ctx2 = document.getElementById('annualAiTrendChart').getContext('2d');
+  chartInstances.annualAiTrend = new Chart(ctx2, {
+    type: 'line',
+    data: {
+      labels: totals.monthlyLabels,
+      datasets: [{ label: 'AI 任務數', data: totals.aiTasksTrend, borderColor: '#a78bfa', backgroundColor: 'rgba(167,139,250,0.15)', fill: true, tension: 0.4 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
